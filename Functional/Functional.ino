@@ -4,7 +4,6 @@
 Helios_Temperature_Sensor_TMP006 tsensor;
  
 //font
-
 static const char font5x7[] = {
 0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11,  //A
 0x0E, 0x11, 0x1E, 0x11, 0x11, 0x11, 0x1E,  //B
@@ -34,7 +33,6 @@ static const char font5x7[] = {
 0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F,  //Z
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   //spacja 
 };
-
 
 /*buffer, same size as display*/
 char displayBuffer[7][16];
@@ -160,7 +158,7 @@ void setup()
     
    
     
-    //clearDotmatrix();
+    //clearDotmatrix(); this makes it crash...
     
     Serial.println(F("Ready"));
 }
@@ -201,6 +199,10 @@ void loop()
 		send404();
 	    }
 	}
+    }
+    
+    if(digitalRead(30)){
+      Serial.println("button pressed");
     }
     
     //for(i=0; i<20; i++){
@@ -343,7 +345,7 @@ void send404()
    int i=0; 
    if(pos>15) return 0;            //There are only 16 positions available    
     for(i = 0; i < 7; i++){ 
-      displayBuffer[i][pos] = font5x7[(cChar*7) + i];
+     // displayBuffer[i][pos] = font5x7[(cChar*7) + i];
     }  
     strobeDotmatrix();
     return 1;                       
