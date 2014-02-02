@@ -82,6 +82,7 @@ void setup()
     digitalWrite(R7, HIGH);
     
     clearDotmatrix();
+    writeString("TEST",4,5); 
 }
 
 void loop(){
@@ -93,18 +94,18 @@ void loop(){
   
   
   //Serial.println("test");
-   while(Serial.available()){
-       writeString("SERIAL DATA",11,2);  
-       if(Serial.available() > 10){
-           writeString("TEN CHARS",9,3);
-           while(Serial.available()){
-               Serial.read();
-               strobeDotmatrix(); 
-           }
-           writeString("NO DATA",7,4);     
-       }
-       strobeDotmatrix();
-   }   
+   //while(Serial.available()){
+   //    writeString("SERIAL DATA",11,2);  
+   //    if(Serial.available() > 10){
+   //        writeString("TEN CHARS",9,3);
+   //        while(Serial.available()){
+   //            Serial.read();
+   //            strobeDotmatrix(); 
+   //        }
+           //writeString("NO DATA",7,4);     
+   //    }
+   //    strobeDotmatrix();
+   //}   
    strobeDotmatrix(); 
  }
 
