@@ -1,23 +1,10 @@
-/*
- * WiFlyHQ Example httpserver.ino
- *
- * This sketch implements a simple Web server that waits for requests
- * and serves up a small form asking for a username, then when the
- * client posts that form the server sends a greeting page with the
- * user's name and an analog reading.
- *
- * This sketch is released to the public domain.
- *
- * Update 06-06-13 Software serial is changed to Hardware Serial
- */
+#include <Wire.h>
+#include <Helios_Temperature_Sensor_TMP006.h>
 
- /* Notes:
-  * Uses chunked message bodies to work around a problem where
-  * the WiFly will not handle the close() of a client initiated
-  * TCP connection. It fails to send the FIN to the client.
-  * (WiFly RN-XV Firmware version 2.32).
-  */
-
+Helios_Temperature_Sensor_TMP006 tsensor;
+ 
+ 
+ 
 /* Work around a bug with PROGMEM and PSTR where the compiler always
  * generates warnings.
  */
@@ -32,8 +19,8 @@ WiFly wifly;
 
 /* Change these to match your WiFi network */
 
-const char mySSID[] = "xxxxxxxx";
-const char myPassword[] = "xxxxxxxx";
+const char mySSID[] = "ssid";
+const char myPassword[] = "password";
 
 void sendIndex();
 void sendGreeting(char *name);
@@ -103,9 +90,9 @@ void setup()
 
 void loop()
 {
-  Serial.print(F("IP: "));
-  Serial.println(wifly.getIP(buf, sizeof(buf)));  
-  delay(2000);
+  //Serial.print(F("IP: "));
+  //Serial.println(wifly.getIP(buf, sizeof(buf)));  
+  //delay(2000);
   
   if (wifly.available() > 0) {
 
@@ -158,14 +145,20 @@ void sendIndex()
      * firmware the close() does not work for client TCP streams.
      */
     wifly.sendChunkln(F("<html>"));
-    wifly.sendChunkln(F("<title>WiFly HTTP Server Example</title>"));
+    wifly.sendChunkln(F("<title>Dotmatrix server 2014</title>"));
     wifly.sendChunkln(F("<h1>"));
-    wifly.sendChunkln(F("<p>Hello</p>"));
+    wifly.sendChunkln(F("<p>Dotmatrix server 2014</p>"));
     wifly.sendChunkln(F("</h1>"));
     wifly.sendChunkln(F("<form name=\"input\" action=\"/\" method=\"post\">"));
-    wifly.sendChunkln(F("Username:"));
+    wifly.sendChunkln(F("Message:"));
     wifly.sendChunkln(F("<input type=\"text\" name=\"user\" />"));
     wifly.sendChunkln(F("<input type=\"submit\" value=\"Submit\" />"));
+    
+    /* Include temperature measurement */
+    unsigned int ambient = tsensor.ReadAmbient();
+    snprintf_P(buf, sizeof(buf), PSTR("<p>Temperatuur in Martijn zijn kamer is %d graden celcius </p>"), ambient);
+    wifly.sendChunkln(buf);
+    wifly.sendChunkln(F("<p>Martijn Bijwaard 2014</p>"));    
     wifly.sendChunkln(F("</form>")); 
     wifly.sendChunkln(F("</html>"));
     wifly.sendChunkln();
@@ -184,15 +177,16 @@ void sendGreeting(char *name)
      * the message is finished.
      */
     wifly.sendChunkln(F("<html>"));
-    wifly.sendChunkln(F("<title>WiFly HTTP Server Example</title>"));
+    wifly.sendChunkln(F("<title>Dotmatrix server 2014</title>"));
     /* No newlines on the next parts */
-    wifly.sendChunk(F("<h1><p>Hello "));
+    wifly.sendChunk(F("<h1><p>Message: "));
     wifly.sendChunk(name);
     /* Finish the paragraph and heading */
-    wifly.sendChunkln(F("</p></h1>"));
+    wifly.sendChunkln(F(", sent</p></h1>"));
 
-    /* Include a reading from Analog pin 0 */
-    snprintf_P(buf, sizeof(buf), PSTR("<p>Analog0=%d</p>"), analogRead(A0));
+    /* Include temperature measurement */
+    unsigned int ambient = tsensor.ReadAmbient();
+    snprintf_P(buf, sizeof(buf), PSTR("<p>Temperatuur in Martijn zijn kamer is %d graden celcius </p>"), ambient);
     wifly.sendChunkln(buf);
 
     wifly.sendChunkln(F("</html>"));
