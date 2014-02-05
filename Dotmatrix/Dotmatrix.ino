@@ -3,7 +3,6 @@
 
 //Helios_Temperature_Sensor_TMP006 tsensor;
 
-
 //TODO 0 - 9
 static const char font5x7[] = {
 0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11,  //A
@@ -143,8 +142,6 @@ int writeToDotmatrix(char* text, int length, int pos){
     }
     
 }
-
-
 
 /**
  * Row selection.

@@ -1,7 +1,7 @@
 #include <Wire.h>
-#include <Helios_Temperature_Sensor_TMP006.h>
-
-Helios_Temperature_Sensor_TMP006 tsensor;
+//#include <Helios_Temperature_Sensor_TMP006.h>
+//Temperature sensor is on the same pins as dotmatrix display
+//Helios_Temperature_Sensor_TMP006 tsensor;
  
 //font
 static const char font5x7[] = {
@@ -33,10 +33,6 @@ static const char font5x7[] = {
 0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F,  //Z
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   //spacja 
 };
-
-/*buffer, same size as display*/
-char displayBuffer[7][16];
-int i;
 
 //DOTMATRIX PIN SETTINGS
 #define CLK  2
@@ -74,6 +70,7 @@ void send404();
 
 char buf[80];
 char username[16];
+char newMessage=0;
 
 void setup()
 {
@@ -158,14 +155,15 @@ void setup()
     
    
     
-    //clearDotmatrix(); this makes it crash...
+    clearDotmatrix(); //this makes it crash...
     
     Serial.println(F("Ready"));
 }
 
 
-void loop()
-{
+void loop(){
+  int i;
+
   if (wifly.available() > 0) {
 
         /* See if there is a request */
@@ -174,22 +172,24 @@ void loop()
 		/* GET request */
 		Serial.println(F("Got GET request"));
 		while (wifly.gets(buf, sizeof(buf)) > 0) {
-		    /* Skip rest of request */
+		  /* Skip rest of request */
 		}
 		sendIndex();
 		Serial.println(F("Sent index page"));
 	    } else if (strncmp_P(buf, PSTR("POST"), 4) == 0) {
 	        /* Form POST */
 	        Serial.println(F("Got POST"));
-
 		/* Get posted field value */
 		if (wifly.match(F("user="))) {
-		    wifly.gets(username, sizeof(username));
-		    wifly.flushRx();		// discard rest of input
-		    sendGreeting(username);
-                    Serial.println(username);
-                    //writeString(username,sizeof(username),0);
-		}
+		  wifly.gets(username, sizeof(username));
+		  wifly.flushRx();		// discard rest of input
+		  sendIndex();
+                  //sendGreeting(username);
+                  Serial.println(username);
+                  newMessage = 1;
+		  
+                } 
+
 	    } else {
 	        /* Unexpected request */
 		Serial.print(F("Unexpected: "));
@@ -201,18 +201,18 @@ void loop()
 	}
     }
     
-    if(digitalRead(30)){
-      Serial.println("button pressed");
+    //only if a new message is received, display it
+    if(newMessage > 0){
+      /*Display received text*/
+      Serial.println(F("Writing to dotmatrix buffer:"));
+      Serial.println(username);
+      for(i=0; i<100; i++){
+        //writeToDotmatrix("BANAAN           ",16,0);
+        writeToDotmatrix(username,16,0);
+      }
+      clearDotmatrix();
+      newMessage = 0;
     }
-    
-    //for(i=0; i<20; i++){
-    //  if(i=0){
-        //clearDotmatrix();
-    //    Serial.println(F("Writing to dotmatrix buffer:"));
-        //writeString("BANAAN",6,0);
-    //  }
-      //strobeDotmatrix();
-  //  }
 }
 
 /** Send an index HTML page with an input box for a username */
@@ -240,8 +240,8 @@ void sendIndex()
     wifly.sendChunkln(F("<input type=\"submit\" value=\"Submit\" />"));
     
     /* Include temperature measurement */
-    unsigned int ambient = tsensor.ReadAmbient();
-    snprintf_P(buf, sizeof(buf), PSTR("<p>Temperatuur in Martijn zijn kamer is %d graden celcius </p>"), ambient);
+    //unsigned int ambient = tsensor.ReadAmbient();
+    //snprintf_P(buf, sizeof(buf), PSTR("<p>Temperatuur in Martijn zijn kamer is %d graden celcius </p>"), ambient);
     wifly.sendChunkln(buf);
     wifly.sendChunkln(F("<p>Martijn Bijwaard 2014</p>"));    
     wifly.sendChunkln(F("</form>")); 
@@ -270,8 +270,8 @@ void sendGreeting(char *name)
     wifly.sendChunkln(F(", sent</p></h1>"));
 
     /* Include temperature measurement */
-    unsigned int ambient = tsensor.ReadAmbient();
-    snprintf_P(buf, sizeof(buf), PSTR("<p>Temperatuur in Martijn zijn kamer is %d graden celcius </p>"), ambient);
+    //unsigned int ambient = tsensor.ReadAmbient();
+    //snprintf_P(buf, sizeof(buf), PSTR("<p>Temperatuur in Martijn zijn kamer is %d graden celcius </p>"), ambient);
     wifly.sendChunkln(buf);
 
     wifly.sendChunkln(F("</html>"));
@@ -299,70 +299,33 @@ void send404()
  * Clears dotmatrix display.
  */ 
  int clearDotmatrix(void){
-    int i;
-    for(i=0; i<80; i++){
-         displayBuffer[0][i] = 0;
-         displayBuffer[1][i] = 0;
-         displayBuffer[2][i] = 0;
-         displayBuffer[3][i] = 0;
-         displayBuffer[4][i] = 0;
-         displayBuffer[5][i] = 0;
-         displayBuffer[6][i] = 0;
-    }
-    return 1;                       
+      writeToDotmatrix("                ",16,0);  //16x spacja                   
  }
  
- 
- /**
- * Writes a string of chars to the dotmatrix display buffer.
- * 
- * @param sString string to wirte to display.
- * @param length  Length of the string.
- * @param pos     start position of the string.
- */ 
- int writeString(char* text, int length, int pos){
-    int i;
-    
-    clearDotmatrix(); // clear the display
-    //if(pos+length>15) return 0;            //There are only 16 positions available    
-    for(i = 0; i < length; i++){
-      if(text[i] <= 48){
-        writeChar(26        , i+pos); //spacja
-      }else{
-        writeChar(text[i]-65, i+pos); //49
-      }
-    }
-    return 1;                       
- }
-
 /**
  * Writes a single char to the dotmatrix display buffer.
  * 
- * @param cChar char to wirte to display.
- * @param pos posistion of the char on the display(0-15).
+ * @param text to write to display.
+ * @param length of the text on the display(0-15).
+ * @param pos starting posistion of the char on the display. 
+ *
+ * TODO: Position and length!
  */ 
- int writeChar(char cChar, int pos){
-   int i=0; 
-   if(pos>15) return 0;            //There are only 16 positions available    
-    for(i = 0; i < 7; i++){ 
-     // displayBuffer[i][pos] = font5x7[(cChar*7) + i];
-    }  
-    strobeDotmatrix();
-    return 1;                       
- }
- 
- 
-/**
- * Write local buffer to dotmatrix display.
- * 
- */ 
- int strobeDotmatrix(void){
+int writeToDotmatrix(char* text, int length, int pos){
     int i,j,k;
     char cTemp;
-    for(i=0; i<7; i++){                    //7 rows
+      
+    for(i=0; i<7; i++){                   //7 rows
+
         for(j=0; j<16; j++){              //16 5x7 displays
-            cTemp = displayBuffer[i][j];
-            for(k=0; k<5; k++){          
+            //temporary code or space
+            if(text[j] <= 48){
+              text[j] = 26+65;
+            }
+            //end of temporary code
+  
+            cTemp = font5x7[((text[j]-65)*7) + i];
+            for(k=0; k<5; k++){           //write one line of 5x7 display       
                 if(cTemp & 0x10){
                     one();
                 } else{
@@ -371,19 +334,21 @@ void send404()
                 cTemp = cTemp << 1;
             }
         }
-    rowSelect(i);    
+
+    rowSelect(i); 
     digitalWrite(STR, HIGH);  //strobe every row
+    delayMicroseconds(50); 
     digitalWrite(STR, LOW);
-    //delay();
+    delayMicroseconds(50);
     }
+    
 }
 
-
 /**
- * Write local buffer to dotmatrix display.
+ * Row selection.
  * 
  */ 
- int rowSelect(char row){ 
+ inline int rowSelect(char row){ 
     switch(row){
       case 0: 
         digitalWrite(R1  , LOW);
@@ -463,7 +428,7 @@ void send404()
  /**
  * set led of dotmatrix.
  */  
- void one(void){
+ inline void one(void){
     digitalWrite(CLK, LOW);
     digitalWrite(DATA, HIGH);
     digitalWrite(CLK, HIGH);
@@ -472,7 +437,7 @@ void send404()
  /**
  * not set led of dotmatrix.
  */  
-void zero(void){
+inline void zero(void){
     digitalWrite(CLK, LOW);
     digitalWrite(DATA, LOW);
     digitalWrite(CLK, HIGH);
